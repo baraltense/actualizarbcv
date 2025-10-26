@@ -1,0 +1,43 @@
+name: Actualizar datos estadísticos BCV
+
+on:
+  schedule:
+    - cron: "0 8 * * 1-5"  # Lunes a viernes a las 8 AM
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install requests pandas openpyxl
+
+      - name: Run scraper
+        run: python scraper.py
+
+      - name: Process data
+        run: python procesar_datos.py
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if ! git diff --cached --quiet; then
+            git commit -m "📊 Actualizar datos estadísticos BCV - $(date -u)"
+            git push
+          else
+            echo "⚠️ No hay cambios."
+          fi

@@ -1,0 +1,3 @@
+echo "requests" > requirements.txt
+echo "pandas" >> requirements.txt
+echo "openpyxl" >> requirements.txt

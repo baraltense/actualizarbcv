@@ -2,7 +2,7 @@ name: Actualizar datos estadísticos BCV
 
 on:
   schedule:
-    - cron: "0 8 * * 1-5"  # Lunes a viernes a las 8 AM
+    - cron: "0 8 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests pandas openpyxl
+          pip install requests pandas openpyxl xlrd
 
       - name: Run scraper
         run: python scraper.py

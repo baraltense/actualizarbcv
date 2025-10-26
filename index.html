@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Estadísticas BCV – Datos Oficiales</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          },
+          colors: {
+            primary: {
+              600: '#1e3a8a',
+              700: '#1d4ed8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="font-sans text-gray-900 min-h-screen bg-gray-50">
+  <div class="max-w-6xl mx-auto py-8 px-4">
+    <!-- Encabezado -->
+    <header class="text-center mb-12">
+      <div class="flex items-center justify-center gap-4 mb-5">
+        <div class="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center text-white text-2xl shadow-lg">
+          <i class="fas fa-chart-line"></i>
+        </div>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-3">Estadísticas BCV</h1>
+      <p class="text-gray-600 max-w-2xl mx-auto text-lg">
+        Datos estadísticos oficiales del Banco Central de Venezuela
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <!-- Tarjeta de resumen -->
+      <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <h2 class="text-lg font-bold text-primary-600 mb-4 flex items-center gap-2">
+          <i class="fas fa-database"></i> Resumen de Datos
+        </h2>
+        <div id="resumen-cards" class="space-y-3">
+          <div class="skeleton h-6 bg-gray-200 rounded w-3/4"></div>
+          <div class="skeleton h-6 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+
+      <!-- Selector de año -->
+      <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <h2 class="text-lg font-bold text-primary-600 mb-4 flex items-center gap-2">
+          <i class="fas fa-calendar"></i> Seleccionar Año
+        </h2>
+        <select id="year-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+          <option value="">Cargando años...</option>
+        </select>
+      </div>
+
+      <!-- Selector de trimestre -->
+      <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <h2 class="text-lg font-bold text-primary-600 mb-4 flex items-center gap-2">
+          <i class="fas fa-chart-bar"></i> Seleccionar Trimestre
+        </h2>
+        <select id="trimestre-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" disabled>
+          <option value="">Primero selecciona un año</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Panel de datos -->
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-primary-600 flex items-center gap-2">
+          <i class="fas fa-table"></i> Datos Estadísticos
+        </h2>
+        <div id="metadata" class="text-sm text-gray-600"></div>
+      </div>
+      
+      <div id="datos-container" class="overflow-x-auto">
+        <div class="text-center py-12 text-gray-500">
+          <i class="fas fa-chart-bar text-4xl mb-4 opacity-50"></i>
+          <p>Selecciona un año y trimestre para visualizar los datos</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de archivos disponibles -->
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <h2 class="text-xl font-bold text-primary-600 mb-6 flex items-center gap-2">
+        <i class="fas fa-list"></i> Archivos Disponibles
+      </h2>
+      <div id="archivos-lista" class="space-y-3">
+        <div class="skeleton h-8 bg-gray-200 rounded"></div>
+        <div class="skeleton h-8 bg-gray-200 rounded"></div>
+        <div class="skeleton h-8 bg-gray-200 rounded"></div>
+      </div>
+    </div>
+
+    <!-- Pie -->
+    <footer class="mt-12 text-center text-gray-600 text-sm">
+      <div class="bg-white/80 backdrop-blur-sm rounded-xl p-5 max-w-3xl mx-auto border border-gray-200">
+        Los datos se actualizan automáticamente desde el Banco Central de Venezuela.
+        Última actualización: <span id="ultima-actualizacion">—</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Estado global
+    let datosDisponibles = [];
+    let datosActuales = null;
+
+    // Cargar resumen al inicio
+    async function cargarResumen() {
+      try {
+        const response = await fetch('datos/resumen_estadisticas.json');
+        const resumen = await response.json();
+        
+        // Actualizar UI
+        document.getElementById('resumen-cards').innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Archivos disponibles:</span>
+            <span class="font-bold text-primary-600">${resumen.total_archivos}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Años cubiertos:</span>
+            <span class="font-bold text-primary-600">${Object.keys(resumen.resumen_por_año).length}</span>
+          </div>
+        `;
+        
+        document.getElementById('ultima-actualizacion').textContent = 
+          new Date(resumen.ultima_actualizacion).toLocaleDateString('es-VE');
+        
+        datosDisponibles = resumen.datos_disponibles;
+        actualizarSelectores();
+        actualizarListaArchivos();
+        
+      } catch (error) {
+        console.error('Error cargando resumen:', error);
+        document.getElementById('resumen-cards').innerHTML = 
+          '<div class="text-red-600">Error cargando datos</div>';
+      }
+    }
+
+    // Actualizar selectores de año y trimestre
+    function actualizarSelectores() {
+      const years = [...new Set(datosDisponibles.map(d => d.year))].sort().reverse();
+      const yearSelect = document.getElementById('year-select');
+      
+      yearSelect.innerHTML = '<option value="">Selecciona un año</option>';
+      years.forEach(year => {
+        yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+      });
+      
+      yearSelect.disabled = false;
+    }
+
+    // Actualizar lista de archivos
+    function actualizarListaArchivos() {
+      const lista = document.getElementById('archivos-lista');
+      lista.innerHTML = '';
+      
+      datosDisponibles.forEach(archivo => {
+        const div = document.createElement('div');
+        div.className = 'flex justify-between items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50';
+        div.innerHTML = `
+          <div>
+            <span class="font-medium">${archivo.year} - Trimestre ${archivo.trimestre}</span>
+            <span class="text-sm text-gray-500 ml-2">${archivo.registros} registros</span>
+          </div>
+          <button onclick="cargarDatos('${archivo.archivo}')" class="px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-700">
+            Ver datos
+          </button>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    // Cargar datos específicos
+    async function cargarDatos(archivoPath) {
+      try {
+        const response = await fetch(archivoPath);
+        const datos = await response.json();
+        datosActuales = datos;
+        mostrarDatos(datos);
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+        alert('Error al cargar los datos');
+      }
+    }
+
+    // Mostrar datos en tabla
+    function mostrarDatos(datos) {
+      const container = document.getElementById('datos-container');
+      const metadata = document.getElementById('metadata');
+      
+      // Actualizar metadata
+      metadata.innerHTML = `
+        ${datos.metadata.year} - Trimestre ${datos.metadata.trimestre} | 
+        ${datos.metadata.total_registros} registros
+      `;
+      
+      if (datos.datos.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-gray-500">No hay datos disponibles</div>';
+        return;
+      }
+      
+      // Crear tabla
+      const columnas = datos.metadata.columnas;
+      let html = `
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+      `;
+      
+      // Encabezados
+      columnas.forEach(col => {
+        html += `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${col}</th>`;
+      });
+      
+      html += `</tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
+      
+      // Filas
+      datos.datos.forEach((fila, index) => {
+        html += `<tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">`;
+        columnas.forEach(col => {
+          const valor = fila[col] !== null && fila[col] !== undefined ? fila[col] : '';
+          html += `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${valor}</td>`;
+        });
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // Event listeners para selectores
+    document.getElementById('year-select').addEventListener('change', function() {
+      const year = this.value;
+      const trimestreSelect = document.getElementById('trimestre-select');
+      
+      if (!year) {
+        trimestreSelect.innerHTML = '<option value="">Primero selecciona un año</option>';
+        trimestreSelect.disabled = true;
+        return;
+      }
+      
+      const trimestres = datosDisponibles
+        .filter(d => d.year == year)
+        .map(d => d.trimestre)
+        .sort();
+      
+      trimestreSelect.innerHTML = '<option value="">Selecciona un trimestre</option>';
+      trimestres.forEach(trimestre => {
+        trimestreSelect.innerHTML += `<option value="${trimestre}">Trimestre ${trimestre}</option>`;
+      });
+      
+      trimestreSelect.disabled = false;
+    });
+
+    document.getElementById('trimestre-select').addEventListener('change', function() {
+      const year = document.getElementById('year-select').value;
+      const trimestre = this.value;
+      
+      if (!year || !trimestre) return;
+      
+      const archivo = datosDisponibles.find(d => d.year == year && d.trimestre == trimestre);
+      if (archivo) {
+        cargarDatos(archivo.archivo);
+      }
+    });
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', cargarResumen);
+  </script>
+</body>
+</html>

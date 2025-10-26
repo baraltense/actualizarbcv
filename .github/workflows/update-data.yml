@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -22,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests pandas openpyxl  # 👈 SOLO estas 3
+          pip install requests pandas openpyxl
 
       - name: Run scraper
         run: python scraper.py
@@ -30,15 +32,11 @@ jobs:
       - name: Process data
         run: python procesar_datos.py
 
-      - name: Commit and push if changed
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git pull origin main --rebase
-          git add .
-          if ! git diff --cached --quiet; then
-            git commit -m "📊 Actualizar datos estadísticos BCV - $(date -u)"
-            git push origin main
-          else
-            echo "⚠️ No hay cambios."
-          fi
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "📊 Actualizar datos estadísticos BCV"
+          commit_options: "--no-verify"
+          push_options: "--force"
+          status_options: "--untracked-files=no"
+          add_options: "-u"

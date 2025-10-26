@@ -30,6 +30,7 @@ def descargar_trimestre(year, trimestre):
     url = generar_url_bcv(year, trimestre)
     
     print(f"📡 Descargando {year} Trimestre {trimestre}...")
+    print(f"🔗 URL: {url}")
     
     try:
         response = requests.get(url, headers=HEADERS, timeout=30, verify=False)
@@ -43,13 +44,22 @@ def descargar_trimestre(year, trimestre):
         if len(response.content) < 1024:
             return {"success": False, "error": "Archivo vacío o muy pequeño"}
         
-        # Leer Excel - intentar diferentes engines
+        # Guardar archivo temporalmente para debug
+        with open('temp_file.xls', 'wb') as f:
+            f.write(response.content)
+        print(f"📁 Archivo descargado: {len(response.content)} bytes")
+        
+        # Leer Excel con openpyxl explícitamente
         try:
-            df = pd.read_excel(BytesIO(response.content), engine='xlrd')
+            # Forzar openpyxl para archivos .xls
+            df = pd.read_excel(BytesIO(response.content), engine='openpyxl')
+            print("✅ Archivo leído con openpyxl")
         except Exception as e:
-            print(f"⚠️ xlrd falló, intentando openpyxl: {e}")
+            print(f"❌ Error con openpyxl: {e}")
+            # Intentar sin engine específico
             try:
-                df = pd.read_excel(BytesIO(response.content), engine='openpyxl')
+                df = pd.read_excel(BytesIO(response.content))
+                print("✅ Archivo leído con engine por defecto")
             except Exception as e2:
                 return {"success": False, "error": f"No se pudo leer Excel: {e2}"}
         
@@ -78,6 +88,7 @@ def descargar_trimestre(year, trimestre):
         with open(archivo, 'w', encoding='utf-8') as f:
             json.dump(datos_procesados, f, ensure_ascii=False, indent=2)
         
+        print(f"💾 Guardado: {archivo}")
         return {"success": True, "archivo": archivo}
         
     except requests.exceptions.RequestException as e:
@@ -88,27 +99,23 @@ def descargar_trimestre(year, trimestre):
         error_msg = f"Error procesando: {str(e)}"
         print(f"❌ {error_msg}")
         return {"success": False, "error": error_msg}
+    finally:
+        # Limpiar archivo temporal
+        if os.path.exists('temp_file.xls'):
+            os.remove('temp_file.xls')
 
 def main():
     """Función principal"""
     print("🚀 Iniciando scraper BCV")
-    print("📦 Dependencias: pandas, xlrd, openpyxl")
+    print("📦 Dependencias: pandas, openpyxl")
     
-    # Solo intentar años realistas
-    año_actual = datetime.now().year
-    configuraciones = []
-    
-    # Intentar solo los últimos 3 años
-    for year in range(2022, año_actual + 1):
-        for trimestre in ['I', 'II', 'III', 'IV']:
-            # Para año actual, solo trimestres pasados
-            if year == año_actual:
-                trimestre_actual = ((datetime.now().month - 1) // 3) + 1
-                trimestres_posibles = ['I', 'II', 'III', 'IV'][:trimestre_actual]
-                if trimestre in trimestres_posibles:
-                    configuraciones.append({'year': year, 'trimestre': trimestre})
-            else:
-                configuraciones.append({'year': year, 'trimestre': trimestre})
+    # Solo intentar años realistas - menos archivos para debug
+    configuraciones = [
+        {'year': 2023, 'trimestre': 'I'},
+        {'year': 2023, 'trimestre': 'II'},
+        {'year': 2023, 'trimestre': 'III'},
+        {'year': 2023, 'trimestre': 'IV'},
+    ]
     
     print(f"📋 Intentando {len(configuraciones)} archivos...")
     
@@ -117,7 +124,7 @@ def main():
         resultado = descargar_trimestre(config['year'], config['trimestre'])
         resultados.append(resultado)
         import time
-        time.sleep(0.5)  # Pausa corta
+        time.sleep(1)  # Pausa entre requests
     
     # Resumen
     resumen = {
@@ -132,6 +139,13 @@ def main():
         json.dump(resumen, f, ensure_ascii=False, indent=2)
     
     print(f"\n📊 RESUMEN: {resumen['exitosos']}/{resumen['total_solicitudes']} exitosos")
+    
+    # Mostrar errores específicos
+    if resumen['fallidos'] > 0:
+        print(f"\n🔍 Errores detectados:")
+        for resultado in resultados:
+            if not resultado.get('success'):
+                print(f"   - {resultado.get('error', 'Error desconocido')}")
     
     return resumen
 

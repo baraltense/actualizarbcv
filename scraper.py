@@ -30,32 +30,31 @@ def descargar_trimestre(year, trimestre):
     url = generar_url_bcv(year, trimestre)
     
     print(f"📡 Descargando {year} Trimestre {trimestre}...")
-    print(f"🔗 URL: {url}")
     
     try:
         response = requests.get(url, headers=HEADERS, timeout=30, verify=False)
+        
+        # Verificar si la respuesta es exitosa
+        if response.status_code == 404:
+            return {"success": False, "error": "Archivo no encontrado (404)"}
         response.raise_for_status()
         
         # Verificar que el archivo no esté vacío
-        if len(response.content) < 1024:  # Menos de 1KB probablemente es error
-            return {"success": False, "error": f"Archivo demasiado pequeño o vacío: {len(response.content)} bytes"}
+        if len(response.content) < 1024:
+            return {"success": False, "error": "Archivo vacío o muy pequeño"}
         
-        # Leer Excel con engine específico para .xls
+        # Leer Excel - intentar diferentes engines
         try:
-            # Primero intentar con xlrd
             df = pd.read_excel(BytesIO(response.content), engine='xlrd')
         except Exception as e:
-            print(f"⚠️ xlrd falló, intentando con openpyxl: {e}")
+            print(f"⚠️ xlrd falló, intentando openpyxl: {e}")
             try:
-                # Fallback a openpyxl
                 df = pd.read_excel(BytesIO(response.content), engine='openpyxl')
             except Exception as e2:
-                print(f"⚠️ openpyxl también falló: {e2}")
-                return {"success": False, "error": f"No se pudo leer el archivo Excel: {e2}"}
+                return {"success": False, "error": f"No se pudo leer Excel: {e2}"}
         
-        # Verificar que el DataFrame tenga datos
         if df.empty:
-            return {"success": False, "error": "DataFrame vacío - sin datos"}
+            return {"success": False, "error": "DataFrame vacío"}
         
         print(f"✅ Datos leídos: {df.shape[0]} filas, {df.shape[1]} columnas")
         
@@ -79,31 +78,30 @@ def descargar_trimestre(year, trimestre):
         with open(archivo, 'w', encoding='utf-8') as f:
             json.dump(datos_procesados, f, ensure_ascii=False, indent=2)
         
-        print(f"💾 Guardado: {archivo}")
-        return {"success": True, "archivo": archivo, "year": year, "trimestre": trimestre}
+        return {"success": True, "archivo": archivo}
         
     except requests.exceptions.RequestException as e:
         error_msg = f"Error de conexión: {str(e)}"
         print(f"❌ {error_msg}")
         return {"success": False, "error": error_msg}
     except Exception as e:
-        error_msg = f"Error procesando archivo: {str(e)}"
+        error_msg = f"Error procesando: {str(e)}"
         print(f"❌ {error_msg}")
         return {"success": False, "error": error_msg}
 
 def main():
-    """Función principal del scraper"""
-    print("🚀 Iniciando scraper de datos estadísticos BCV")
+    """Función principal"""
+    print("🚀 Iniciando scraper BCV")
     print("📦 Dependencias: pandas, xlrd, openpyxl")
     
-    # Configuración de qué datos descargar (solo años con datos probables)
+    # Solo intentar años realistas
     año_actual = datetime.now().year
     configuraciones = []
     
-    # Solo intentar años recientes que probablemente existan
-    for year in range(2021, año_actual + 1):
+    # Intentar solo los últimos 3 años
+    for year in range(2022, año_actual + 1):
         for trimestre in ['I', 'II', 'III', 'IV']:
-            # Para el año actual, solo trimestres pasados
+            # Para año actual, solo trimestres pasados
             if year == año_actual:
                 trimestre_actual = ((datetime.now().month - 1) // 3) + 1
                 trimestres_posibles = ['I', 'II', 'III', 'IV'][:trimestre_actual]
@@ -112,19 +110,16 @@ def main():
             else:
                 configuraciones.append({'year': year, 'trimestre': trimestre})
     
-    print(f"📋 Intentando descargar {len(configuraciones)} archivos...")
+    print(f"📋 Intentando {len(configuraciones)} archivos...")
     
     resultados = []
-    
     for config in configuraciones:
         resultado = descargar_trimestre(config['year'], config['trimestre'])
         resultados.append(resultado)
-        
-        # Pequeña pausa para no saturar el servidor
         import time
-        time.sleep(1)
+        time.sleep(0.5)  # Pausa corta
     
-    # Guardar resumen de ejecución
+    # Resumen
     resumen = {
         "ultima_actualizacion": datetime.utcnow().isoformat() + "Z",
         "total_solicitudes": len(resultados),
@@ -136,17 +131,7 @@ def main():
     with open("resumen_ejecucion.json", "w", encoding="utf-8") as f:
         json.dump(resumen, f, ensure_ascii=False, indent=2)
     
-    print(f"\n📊 RESUMEN FINAL:")
-    print(f"   ✅ Exitosos: {resumen['exitosos']}")
-    print(f"   ❌ Fallidos: {resumen['fallidos']}")
-    print(f"   📁 Total: {resumen['total_solicitudes']}")
-    
-    # Mostrar errores específicos
-    if resumen['fallidos'] > 0:
-        print(f"\n🔍 Errores detectados:")
-        for resultado in resultados:
-            if not resultado.get('success'):
-                print(f"   - {resultado.get('error', 'Error desconocido')}")
+    print(f"\n📊 RESUMEN: {resumen['exitosos']}/{resumen['total_solicitudes']} exitosos")
     
     return resumen
 

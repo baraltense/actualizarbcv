@@ -1,40 +1,24 @@
 {
-  "ultima_actualizacion": "2025-10-26T12:18:54.377853Z",
-  "total_solicitudes": 8,
+  "ultima_actualizacion": "2025-10-27T08:23:39.194516Z",
+  "total_solicitudes": 4,
   "exitosos": 0,
-  "fallidos": 8,
+  "fallidos": 4,
   "detalles": [
     {
       "success": false,
-      "error": "Error en 2024-I: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
+      "error": "No se pudo leer Excel: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
     },
     {
       "success": false,
-      "error": "Error en 2024-II: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
+      "error": "No se pudo leer Excel: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
     },
     {
       "success": false,
-      "error": "Error en 2024-III: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
+      "error": "No se pudo leer Excel: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
     },
     {
       "success": false,
-      "error": "Error en 2024-IV: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
-    },
-    {
-      "success": false,
-      "error": "Error en 2025-I: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
-    },
-    {
-      "success": false,
-      "error": "Error en 2025-II: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
-    },
-    {
-      "success": false,
-      "error": "Error en 2025-III: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
-    },
-    {
-      "success": false,
-      "error": "Error en 2025-IV: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
+      "error": "No se pudo leer Excel: Missing optional dependency 'xlrd'. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install xlrd."
     }
   ]
 }
